@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'dart:math';
 import '../models/password_entry.dart';
 
@@ -39,24 +38,10 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen> {
   bool _isValidatingUrl = false;
 
   // URL validation and verification
-  Future<bool> _isSecureUrl(String url) async {
+  bool _isSecureUrl(String url) {
     try {
       final uri = Uri.parse(url);
-      if (!uri.isScheme('https')) {
-        return false;
-      }
-      
-      if (uri.host.isEmpty) {
-        return false;
-      }
-
-      // Only check connectivity if URL is syntactically valid
-      try {
-        final canLaunch = await canLaunchUrl(uri);
-        return canLaunch;
-      } catch (e) {
-        return false;
-      }
+      return uri.isScheme('https') && uri.host.isNotEmpty;
     } catch (e) {
       return false;
     }
