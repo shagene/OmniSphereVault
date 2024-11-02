@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'password_vault_screen.dart';
+import '../../password_management/views/password_vault_screen.dart';
 
 class MasterPasswordScreen extends StatefulWidget {
   const MasterPasswordScreen({super.key});

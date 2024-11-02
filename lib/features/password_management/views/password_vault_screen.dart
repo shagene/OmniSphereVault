@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'models/password_entry.dart';
-import 'bottom_nav.dart';
-import 'password_generator_screen.dart';
-import 'settings_screen.dart';
-import 'categories_screen.dart';
-import 'widgets/search_bar_widget.dart';
-import 'utils/keyboard_shortcuts.dart';
-import 'utils/clipboard_manager.dart';
-import 'dialogs/edit_password_dialog.dart';
+import '../models/password_entry.dart';
+import '../../../core/widgets/bottom_nav.dart';
+import './password_generator_screen.dart';
+import '../../../features/settings/views/settings_screen.dart';
+import '../../../features/categories/views/categories_screen.dart';
+import '../../../core/widgets/search_bar_widget.dart';
+import '../../../core/utils/keyboard_shortcuts.dart';
+import '../../../core/utils/clipboard_manager.dart';
+import '../../../features/categories/models/category_item.dart';
 
 class PasswordVaultScreen extends StatefulWidget {
   const PasswordVaultScreen({super.key});

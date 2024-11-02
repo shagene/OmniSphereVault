@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io' show Platform;
-import 'master_password_screen.dart';
-import 'utils/design_utils.dart';
-import 'utils/keyboard_shortcuts.dart';
+import 'core/utils/design_utils.dart';
+import 'core/utils/keyboard_shortcuts.dart';
+import 'features/auth/views/master_password_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,7 +50,6 @@ class OmniSphereVault extends StatelessWidget {
       builder: (context, child) {
         return LayoutBuilder(
           builder: (context, constraints) {
-            // Only apply minimum window size constraints on desktop platforms
             if ((Platform.isWindows || Platform.isLinux || Platform.isMacOS) &&
                 (constraints.maxWidth < DesignUtils.minWindowWidth ||
                     constraints.maxHeight < DesignUtils.minWindowHeight)) {

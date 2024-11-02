@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/design_utils.dart';
+import '../../../core/utils/design_utils.dart';
 
 class ColorPickerDialog extends StatelessWidget {
   const ColorPickerDialog({super.key});

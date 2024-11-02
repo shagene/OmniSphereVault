@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:math';
-import 'models/password_entry.dart';
+import '../models/password_entry.dart';
 
 class PasswordGeneratorScreen extends StatefulWidget {
   final PasswordEntry? entryToEdit;

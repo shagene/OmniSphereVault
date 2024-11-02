@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import '../utils/design_utils.dart';
+import '../../../core/utils/design_utils.dart';
 
 class IconPickerDialog extends StatelessWidget {
   const IconPickerDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return AlertDialog(
       title: const Text('Choose Icon'),
       content: SizedBox(
@@ -30,7 +28,7 @@ class IconPickerDialog extends StatelessWidget {
               icon: Icon(
                 icon,
                 size: 32,
-                color: colorScheme.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
             );
           },
