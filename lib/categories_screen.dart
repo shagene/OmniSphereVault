@@ -54,6 +54,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    
+    // Calculate grid crossAxisCount based on screen width
+    final width = MediaQuery.of(context).size.width;
+    final crossAxisCount = width > 600 ? 3 : 2;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -72,7 +76,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   _showAddCategoryDialog(context);
                 },
                 icon: const Icon(Icons.add),
-                label: const Text('Add Category'),
+                label: const Text('Add'),
               ),
             ],
           ),
@@ -80,11 +84,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.5,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.0, // Make cards square
             ),
             itemCount: _categories.length,
             itemBuilder: (context, index) {
@@ -114,33 +118,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         },
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    category.icon,
-                    size: 32,
-                    color: category.color,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    category.name,
-                    style: textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${category.count} passwords',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.outline,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
+            // More options button
             Positioned(
               top: 4,
               right: 4,
@@ -148,10 +126,43 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 icon: Icon(
                   Icons.more_vert,
                   color: colorScheme.onSurfaceVariant,
+                  size: 20,
                 ),
                 onPressed: () {
                   _showCategoryOptions(context, category);
                 },
+              ),
+            ),
+            // Main content
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      category.icon,
+                      size: 32,
+                      color: category.color,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      category.name,
+                      style: textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${category.count} passwords',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.outline,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

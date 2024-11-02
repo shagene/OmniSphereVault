@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:io' show Platform;
 import 'master_password_screen.dart';
 import 'utils/design_utils.dart';
 import 'utils/keyboard_shortcuts.dart';
@@ -49,8 +50,10 @@ class OmniSphereVault extends StatelessWidget {
       builder: (context, child) {
         return LayoutBuilder(
           builder: (context, constraints) {
-            if (constraints.maxWidth < DesignUtils.minWindowWidth ||
-                constraints.maxHeight < DesignUtils.minWindowHeight) {
+            // Only apply minimum window size constraints on desktop platforms
+            if ((Platform.isWindows || Platform.isLinux || Platform.isMacOS) &&
+                (constraints.maxWidth < DesignUtils.minWindowWidth ||
+                    constraints.maxHeight < DesignUtils.minWindowHeight)) {
               return const Center(
                 child: Text(
                   'Please resize window to at least ${DesignUtils.minWindowWidth}x${DesignUtils.minWindowHeight}',

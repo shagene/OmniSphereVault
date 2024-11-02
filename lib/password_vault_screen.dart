@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'models/password_entry.dart';
 import 'bottom_nav.dart';
 import 'password_generator_screen.dart';
 import 'settings_screen.dart';
@@ -7,6 +8,7 @@ import 'categories_screen.dart';
 import 'widgets/search_bar_widget.dart';
 import 'utils/keyboard_shortcuts.dart';
 import 'utils/clipboard_manager.dart';
+import 'dialogs/edit_password_dialog.dart';
 
 class PasswordVaultScreen extends StatefulWidget {
   const PasswordVaultScreen({super.key});
@@ -28,37 +30,80 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
   // Temporary data - will be replaced with actual database data
   final List<PasswordEntry> _passwords = [
     PasswordEntry(
-      title: 'Google',
-      username: 'john.doe@gmail.com',
+      title: 'Google Account',
+      username: 'johndoe',
+      email: 'john.doe@gmail.com',
       password: 'encrypted_password_1',
-      notes: 'Personal Gmail account',
+      url: 'https://accounts.google.com',
+      notes: 'Personal Gmail account and Google services',
       lastModified: DateTime.now(),
       category: 'Email',
       tags: ['personal', 'important'],
+      lastUsed: DateTime.now(),
+      passwordLastChanged: DateTime.now().subtract(const Duration(days: 30)),
+      isFavorite: true,
     ),
     PasswordEntry(
-      title: 'Facebook',
+      title: 'GitHub',
       username: 'johndoe',
+      email: 'john.doe@gmail.com',
       password: 'encrypted_password_2',
-      notes: 'Social media account',
+      url: 'https://github.com',
+      notes: 'Professional GitHub account for work projects',
       lastModified: DateTime.now().subtract(const Duration(days: 7)),
-      category: 'Social Media',
-      tags: ['social', 'personal'],
+      category: 'Development',
+      tags: ['work', 'development'],
+      lastUsed: DateTime.now().subtract(const Duration(days: 1)),
+      passwordLastChanged: DateTime.now().subtract(const Duration(days: 90)),
+      isFavorite: true,
+    ),
+    PasswordEntry(
+      title: 'Netflix',
+      email: 'john.doe@gmail.com',
+      password: 'encrypted_password_3',
+      url: 'https://netflix.com',
+      notes: 'Family Netflix subscription',
+      lastModified: DateTime.now().subtract(const Duration(days: 14)),
+      category: 'Entertainment',
+      tags: ['streaming', 'personal'],
+      lastUsed: DateTime.now().subtract(const Duration(days: 2)),
+      passwordLastChanged: DateTime.now().subtract(const Duration(days: 45)),
+      isFavorite: false,
+    ),
+    PasswordEntry(
+      title: 'Bank Account',
+      username: '12345678',
+      password: 'encrypted_password_4',
+      url: 'https://mybank.com',
+      notes: 'Personal checking account',
+      lastModified: DateTime.now().subtract(const Duration(days: 21)),
+      category: 'Banking',
+      tags: ['finance', 'important'],
+      lastUsed: DateTime.now().subtract(const Duration(days: 3)),
+      passwordLastChanged: DateTime.now().subtract(const Duration(days: 15)),
+      isFavorite: true,
     ),
     PasswordEntry(
       title: 'Twitter',
       username: '@johndoe',
-      password: 'encrypted_password_3',
-      lastModified: DateTime.now().subtract(const Duration(days: 14)),
+      password: 'encrypted_password_5',
+      url: 'https://twitter.com',
+      lastModified: DateTime.now().subtract(const Duration(days: 30)),
       category: 'Social Media',
+      tags: ['social', 'personal'],
+      lastUsed: DateTime.now().subtract(const Duration(days: 5)),
+      passwordLastChanged: DateTime.now().subtract(const Duration(days: 60)),
+      isFavorite: false,
     ),
-    // Add more sample passwords
   ];
 
   List<PasswordEntry> get filteredPasswords {
     return _passwords.where((password) {
       final matchesSearch = password.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          password.username.toLowerCase().contains(_searchQuery.toLowerCase());
+          (password.username?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
+          (password.email?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
+          (password.url?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
+          (password.notes?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
       final matchesCategory = _selectedCategory == null || password.category == _selectedCategory!.name;
       return matchesSearch && matchesCategory;
     }).toList();
@@ -114,8 +159,25 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
           floatingActionButton: _currentIndex == 0
               ? FloatingActionButton(
                   child: const Icon(Icons.add),
-                  onPressed: () {
-                    // Navigate to add new password entry
+                  onPressed: () async {
+                    final PasswordEntry? newEntry = await Navigator.push<PasswordEntry>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PasswordGeneratorScreen(),
+                      ),
+                    );
+                    
+                    if (newEntry != null && mounted) {
+                      setState(() {
+                        _passwords.add(newEntry);
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Password entry saved successfully'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   },
                 )
               : null,
@@ -248,7 +310,12 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: 88, // Added extra padding at bottom to account for FAB
+      ),
       itemCount: filteredPasswords.length,
       itemBuilder: (context, index) {
         final password = filteredPasswords[index];
@@ -284,6 +351,12 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
                     style: textTheme.titleMedium,
                   ),
                 ),
+                if (entry.isFavorite)
+                  Icon(
+                    Icons.star,
+                    color: colorScheme.primary,
+                    size: 20,
+                  ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -302,17 +375,53 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 16),
-                // Username section with copy button
-                InkWell(
-                  onTap: () => _copyToClipboard(entry.username, 'Username'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                if (entry.url != null) ...[
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: () => _copyToClipboard(entry.url!, 'URL'),
                     child: Row(
                       children: [
-                        Icon(Icons.person_outline, 
-                             size: 16, 
-                             color: colorScheme.onSurfaceVariant),
+                        Icon(Icons.link,
+                            size: 16,
+                            color: colorScheme.onSurfaceVariant),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            entry.url!,
+                            style: textTheme.bodyMedium,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.copy,
+                              size: 20,
+                              color: colorScheme.primary),
+                          onPressed: () => _copyToClipboard(entry.url!, 'URL'),
+                          tooltip: 'Copy URL',
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.open_in_new,
+                              size: 20,
+                              color: colorScheme.primary),
+                          onPressed: () {
+                            // TODO: Implement URL launch
+                          },
+                          tooltip: 'Open URL',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (entry.username != null) ...[
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () => _copyToClipboard(entry.username!, 'Username'),
+                    child: Row(
+                      children: [
+                        Icon(Icons.person_outline,
+                            size: 16,
+                            color: colorScheme.onSurfaceVariant),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -326,23 +435,64 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                entry.username,
+                                entry.username!,
                                 style: textTheme.bodyMedium,
                               ),
                             ],
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.copy, 
-                                   size: 20, 
-                                   color: colorScheme.primary),
-                          onPressed: () => _copyToClipboard(entry.username, 'Username'),
+                          icon: Icon(Icons.copy,
+                              size: 20,
+                              color: colorScheme.primary),
+                          onPressed: () =>
+                              _copyToClipboard(entry.username!, 'Username'),
                           tooltip: 'Copy username',
                         ),
                       ],
                     ),
                   ),
-                ),
+                ],
+                if (entry.email != null) ...[
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () => _copyToClipboard(entry.email!, 'Email'),
+                    child: Row(
+                      children: [
+                        Icon(Icons.email_outlined,
+                            size: 16,
+                            color: colorScheme.onSurfaceVariant),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Email',
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.outline,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                entry.email!,
+                                style: textTheme.bodyMedium,
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.copy,
+                              size: 20,
+                              color: colorScheme.primary),
+                          onPressed: () =>
+                              _copyToClipboard(entry.email!, 'Email'),
+                          tooltip: 'Copy email',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 // Password section with visibility toggle and copy button
                 InkWell(
                   onTap: () => _copyToClipboard(entry.password, 'Password'),
@@ -374,7 +524,7 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
                                   entry.password,
                                   style: textTheme.bodyMedium,
                                 ),
-                                crossFadeState: _passwordVisibility[entry.title]!
+                                crossFadeState: _passwordVisibility[entry.title] ?? false
                                     ? CrossFadeState.showSecond
                                     : CrossFadeState.showFirst,
                                 duration: const Duration(milliseconds: 200),
@@ -384,7 +534,7 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
                         ),
                         IconButton(
                           icon: Icon(
-                            _passwordVisibility[entry.title]! 
+                            (_passwordVisibility[entry.title] ?? false)
                                 ? Icons.visibility_off 
                                 : Icons.visibility,
                             size: 20,
@@ -392,11 +542,10 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
                           ),
                           onPressed: () {
                             setState(() {
-                              _passwordVisibility[entry.title] = 
-                                  !_passwordVisibility[entry.title]!;
+                              _passwordVisibility[entry.title] = !(_passwordVisibility[entry.title] ?? false);
                             });
                             // Auto-hide password after 30 seconds
-                            if (_passwordVisibility[entry.title]!) {
+                            if (_passwordVisibility[entry.title] ?? false) {
                               Future.delayed(const Duration(seconds: 30), () {
                                 if (mounted) {
                                   setState(() {
@@ -478,8 +627,32 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
             children: [
               IconButton(
                 icon: Icon(Icons.edit, color: colorScheme.primary),
-                onPressed: () {
-                  // TODO: Edit entry
+                onPressed: () async {
+                  final updatedEntry = await Navigator.push<PasswordEntry>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PasswordGeneratorScreen(
+                        entryToEdit: entry,
+                      ),
+                    ),
+                  );
+                  
+                  if (updatedEntry != null && mounted) {
+                    setState(() {
+                      final index = _passwords.indexWhere(
+                        (e) => e.title == entry.title,
+                      );
+                      if (index != -1) {
+                        _passwords[index] = updatedEntry;
+                      }
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Password entry updated successfully'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
                 },
                 tooltip: 'Edit entry',
               ),
@@ -575,24 +748,4 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
     _searchController.dispose();
     super.dispose();
   }
-}
-
-class PasswordEntry {
-  final String title;
-  final String username;
-  final String password;
-  final String? notes;
-  final DateTime lastModified;
-  final String category;
-  final List<String> tags;
-
-  PasswordEntry({
-    required this.title,
-    required this.username,
-    required this.password,
-    this.notes,
-    required this.lastModified,
-    required this.category,
-    this.tags = const [],
-  });
 }

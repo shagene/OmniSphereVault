@@ -1,78 +1,68 @@
-# **Password Manager App Development TODO List**
+# **OmniSphereVault Development TODO List**
 
 ## **✅ Initial Setup - COMPLETED**
 - [x] Set up Flutter project with Material 3
 - [x] Implement basic theme configuration
 - [x] Create initial screen structure
+- [x] Set up window size constraints
+- [x] Implement keyboard shortcuts
 
-## **Core Architecture - IN PROGRESS**
+## **✅ Core UI Features - COMPLETED**
+- [x] Create master password screen
+- [x] Implement password vault screen
+- [x] Add category management
+- [x] Create password entry cards
+- [x] Add password visibility toggle
+- [x] Implement secure clipboard handling
+- [x] Add search functionality
+- [x] Implement category filtering
+- [x] Add password generator with options
+- [x] Implement password entry editing
+- [x] Add password history tracking
+- [x] Add URL validation and formatting
+- [x] Implement custom password input option
 
-### Local Storage
-- [ ] Set up SQLite for local data storage
-- [ ] Implement file-based encryption for database
-- [ ] Ensure all data management occurs offline
-- [ ] Develop local backup functionality
+## **Next Phase: Architecture & State Management**
+
+### Riverpod Implementation
+- [ ] Set up Riverpod providers
+- [ ] Create state notifiers for:
+  - [ ] Authentication state
+  - [ ] Password entries
+  - [ ] Categories
+  - [ ] Settings
+  - [ ] Search/Filter state
+- [ ] Implement proper dependency injection
+- [ ] Add state persistence
+
+### Architecture Improvements
+- [ ] Implement proper MVVM/Clean Architecture
+- [ ] Create repository layer
+- [ ] Add service layer
+- [ ] Implement proper error handling
+- [ ] Add logging system
+- [ ] Create proper model classes
+- [ ] Add data transfer objects (DTOs)
+- [ ] Implement mappers
+
+### Database Implementation
+- [ ] Set up SQLite for local storage
+- [ ] Implement file-based encryption
+- [ ] Create database schema
+- [ ] Add migration system
+- [ ] Implement CRUD operations
+- [ ] Add backup functionality
+
+## **Remaining Features**
 
 ### Security Implementation
-- [ ] Implement AES-256 encryption for data security
-- [ ] Use Argon2 for key derivation from master password
-- [ ] Protect sensitive data in memory
-- [ ] Implement secure random number generation
+- [ ] Implement AES-256 encryption
+- [ ] Add Argon2 for key derivation
+- [ ] Implement secure memory handling
+- [ ] Add secure random number generation
+- [ ] Implement proper password hashing
 
-## **UI Implementation - IN PROGRESS**
-
-### ✅ Master Password Screen - COMPLETED
-- [x] Create clean, centered layout
-- [x] Implement password input with visibility toggle
-- [x] Add biometric authentication button
-- [x] Implement Material 3 theming
-- [x] Add proper error handling structure
-
-### ✅ Password Vault Screen - COMPLETED
-- [x] Create main layout with app bar
-- [x] Implement navigation drawer
-- [x] Add floating action button
-- [x] Create password entry cards
-- [x] Implement basic list view
-
-### ✅ Password Entry Detail Screen - COMPLETED
-- [x] Create detail view layout
-- [x] Implement password visibility toggle
-- [x] Add copy functionality structure
-- [x] Create password strength indicator
-- [x] Add edit/delete actions
-
-### Remaining UI Tasks
-- [ ] Implement Password Generator screen
-- [ ] Create Settings screen
-- [ ] Add Search functionality
-- [ ] Implement Category/Tag filtering
-- [ ] Create Import/Export interface
-- [ ] Add Backup/Restore interface
-
-## **Feature Implementation**
-
-### Data Management
-- [ ] Implement password entry CRUD operations
-- [ ] Add categories and tags system
-- [ ] Create search functionality
-- [ ] Implement version tracking for password history
-
-### Export/Import System
-- [ ] Develop selective export functionality
-- [ ] Implement encrypted file format
-- [ ] Add passphrase protection
-- [ ] Create conflict resolution system
-
-### Platform-Specific Features
-- [ ] Implement keyboard shortcuts (desktop)
-- [ ] Add drag-and-drop support (desktop)
-- [ ] Create swipe actions (mobile)
-- [ ] Implement pull-to-refresh (mobile)
-
-## **Security Features**
-
-### Access Control
+### Authentication
 - [ ] Implement actual master password verification
 - [ ] Add biometric authentication
 - [ ] Create auto-lock functionality
@@ -80,23 +70,23 @@
 
 ### Data Protection
 - [ ] Implement zero-knowledge architecture
-- [ ] Add secure clipboard handling
-- [ ] Create manual backup system
+- [ ] Create secure backup/restore system
+- [ ] Add encrypted export/import
 - [ ] Implement secure deletion
 
 ## **Polish & Optimization**
 
 ### Accessibility
 - [ ] Add screen reader support
-- [ ] Implement keyboard navigation
 - [ ] Ensure proper contrast ratios
 - [ ] Add scalable text support
+- [ ] Implement keyboard navigation
 
 ### Performance
 - [ ] Optimize list rendering
-- [ ] Implement proper state management
-- [ ] Add loading states and animations
-- [ ] Create error handling system
+- [ ] Add loading states
+- [ ] Implement proper error handling
+- [ ] Add offline support
 
 ### Testing
 - [ ] Write unit tests
@@ -113,14 +103,20 @@
 ---
 
 **Current Progress:**
-- Basic UI structure implemented
-- Material 3 theming in place
+- Basic UI structure completed
+- Material 3 theming implemented
 - Core screens created
-- Basic navigation flow established
+- Navigation flow established
+- Password management functionality implemented
+- Category system implemented
+- Search and filtering added
+- Password generation and editing implemented
+- History tracking added
+- URL validation implemented
 
-**Next Priority Tasks:**
-1. Implement actual password verification
-2. Set up local storage with encryption
-3. Create password generator functionality
-4. Add search and filtering capabilities
-5. Implement platform-specific features
+**Next Priority:**
+1. Implement Riverpod state management
+2. Set up proper architecture
+3. Implement local storage with encryption
+4. Add proper error handling
+5. Implement security features
