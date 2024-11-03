@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/category_item.dart';
+import '../providers/category_provider.dart';
 import '../../../core/utils/design_utils.dart';
 import './icon_picker_dialog.dart';
 import './color_picker_dialog.dart';
 
-class CategoriesScreen extends StatefulWidget {
+class CategoriesScreen extends ConsumerStatefulWidget {
   final Function(CategoryItem)? onCategorySelected;
 
   const CategoriesScreen({
@@ -13,50 +15,18 @@ class CategoriesScreen extends StatefulWidget {
   });
 
   @override
-  State<CategoriesScreen> createState() => _CategoriesScreenState();
+  ConsumerState<CategoriesScreen> createState() => _CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends State<CategoriesScreen> {
-  // Temporary data - will be replaced with actual database data
-  final List<CategoryItem> _categories = [
-    CategoryItem(
-      name: 'Social Media',
-      icon: Icons.social_distance,
-      count: 5,
-      color: Colors.blue,
-    ),
-    CategoryItem(
-      name: 'Banking',
-      icon: Icons.account_balance,
-      count: 3,
-      color: Colors.green,
-    ),
-    CategoryItem(
-      name: 'Email',
-      icon: Icons.email,
-      count: 2,
-      color: Colors.red,
-    ),
-    CategoryItem(
-      name: 'Work',
-      icon: Icons.work,
-      count: 4,
-      color: Colors.orange,
-    ),
-    CategoryItem(
-      name: 'Shopping',
-      icon: Icons.shopping_bag,
-      count: 6,
-      color: Colors.purple,
-    ),
-  ];
-
+class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   @override
   Widget build(BuildContext context) {
+    final categoryState = ref.watch(categoryProvider);
+    final categories = categoryState.categories;
+    
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     
-    // Calculate grid crossAxisCount based on screen width
     final width = MediaQuery.of(context).size.width;
     final crossAxisCount = width > 600 ? 3 : 2;
 
@@ -82,21 +52,31 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.0, // Make cards square
+          if (categoryState.isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (categoryState.error != null)
+            Center(
+              child: Text(
+                categoryState.error!,
+                style: TextStyle(color: colorScheme.error),
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.0,
+              ),
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final category = categories[index];
+                return _buildCategoryCard(context, category);
+              },
             ),
-            itemCount: _categories.length,
-            itemBuilder: (context, index) {
-              final category = _categories[index];
-              return _buildCategoryCard(context, category);
-            },
-          ),
         ],
       ),
     );
@@ -119,7 +99,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         },
         child: Stack(
           children: [
-            // More options button
             Positioned(
               top: 4,
               right: 4,
@@ -134,7 +113,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 },
               ),
             ),
-            // Main content
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(8),
@@ -168,62 +146,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showCategoryOptions(BuildContext context, CategoryItem category) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text('Edit Category'),
-              onTap: () {
-                Navigator.pop(context);
-                _showEditCategoryDialog(context, category);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete),
-              title: const Text('Delete Category'),
-              onTap: () {
-                Navigator.pop(context);
-                _showDeleteConfirmation(context, category);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showDeleteConfirmation(
-      BuildContext context, CategoryItem category) async {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Category'),
-        content: Text(
-            'Are you sure you want to delete "${category.name}"? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              setState(() {
-                _categories.removeWhere((item) => item.name == category.name);
-              });
-              Navigator.pop(context);
-            },
-            child: const Text('Delete'),
-          ),
-        ],
       ),
     );
   }
@@ -301,27 +223,84 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () {
+              onPressed: () async {
                 if (nameController.text.trim().isNotEmpty) {
-                  setState(() {
-                    final index = _categories
-                        .indexWhere((item) => item.name == category.name);
-                    if (index != -1) {
-                      _categories[index] = CategoryItem(
-                        name: nameController.text.trim(),
-                        icon: selectedIcon,
-                        count: category.count,
-                        color: selectedColor,
-                      );
-                    }
-                  });
-                  Navigator.pop(context);
+                  final updatedCategory = CategoryItem(
+                    name: nameController.text.trim(),
+                    icon: selectedIcon,
+                    count: category.count,
+                    color: selectedColor,
+                  );
+                  
+                  await ref.read(categoryProvider.notifier)
+                      .updateCategory(updatedCategory);
+                  
+                  if (mounted) {
+                    Navigator.pop(context);
+                  }
                 }
               },
               child: const Text('Save'),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showCategoryOptions(BuildContext context, CategoryItem category) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit Category'),
+              onTap: () {
+                Navigator.pop(context);
+                _showEditCategoryDialog(context, category);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete),
+              title: const Text('Delete Category'),
+              onTap: () {
+                Navigator.pop(context);
+                _showDeleteConfirmation(context, category);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showDeleteConfirmation(
+      BuildContext context, CategoryItem category) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Category'),
+        content: Text(
+            'Are you sure you want to delete "${category.name}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await ref.read(categoryProvider.notifier)
+                  .deleteCategory(category.name);
+              if (mounted) {
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }
@@ -397,20 +376,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () {
+              onPressed: () async {
                 if (nameController.text.trim().isNotEmpty) {
-                  // TODO: Save category to database
-                  setState(() {
-                    _categories.add(
-                      CategoryItem(
-                        name: nameController.text.trim(),
-                        icon: selectedIcon,
-                        count: 0,
-                        color: selectedColor,
-                      ),
-                    );
-                  });
-                  Navigator.pop(context);
+                  final newCategory = CategoryItem(
+                    name: nameController.text.trim(),
+                    icon: selectedIcon,
+                    count: 0,
+                    color: selectedColor,
+                  );
+                  
+                  await ref.read(categoryProvider.notifier)
+                      .addCategory(newCategory);
+                  
+                  if (mounted) {
+                    Navigator.pop(context);
+                  }
                 }
               },
               child: const Text('Add'),

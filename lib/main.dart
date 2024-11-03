@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io' show Platform;
 import 'core/utils/design_utils.dart';
 import 'core/utils/keyboard_shortcuts.dart';
@@ -8,14 +9,18 @@ import 'features/auth/views/master_password_screen.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   
-  runApp(const OmniSphereVault());
+  runApp(
+    const ProviderScope(
+      child: OmniSphereVault(),
+    ),
+  );
 }
 
-class OmniSphereVault extends StatelessWidget {
+class OmniSphereVault extends ConsumerWidget {
   const OmniSphereVault({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'OmniSphereVault',
       theme: ThemeData(

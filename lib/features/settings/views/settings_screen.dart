@@ -1,19 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/settings_provider.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isDarkMode = false;
-  bool _useBiometrics = false;
-  int _autoLockTimeout = 1;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsState = ref.watch(settingsProvider);
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -32,12 +26,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 SwitchListTile(
                   title: const Text('Dark Mode'),
                   subtitle: const Text('Use dark theme'),
-                  value: _isDarkMode,
+                  value: settingsState.isDarkMode,
                   onChanged: (value) {
-                    setState(() {
-                      _isDarkMode = value;
-                    });
-                    // TODO: Implement theme switching
+                    ref.read(settingsProvider.notifier).toggleDarkMode();
                   },
                 ),
               ],
@@ -54,19 +45,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 SwitchListTile(
                   title: const Text('Biometric Authentication'),
                   subtitle: const Text('Use fingerprint or face recognition'),
-                  value: _useBiometrics,
+                  value: settingsState.useBiometrics,
                   onChanged: (value) {
-                    setState(() {
-                      _useBiometrics = value;
-                    });
-                    // TODO: Implement biometric settings
+                    ref.read(settingsProvider.notifier).toggleBiometrics();
                   },
                 ),
                 ListTile(
                   title: const Text('Auto-Lock Timeout'),
-                  subtitle: Text('$_autoLockTimeout minute(s)'),
+                  subtitle: Text('${settingsState.autoLockTimeout} minute(s)'),
                   trailing: DropdownButton<int>(
-                    value: _autoLockTimeout,
+                    value: settingsState.autoLockTimeout,
                     items: [1, 5, 10, 30].map((int value) {
                       return DropdownMenuItem<int>(
                         value: value,
@@ -75,10 +63,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     }).toList(),
                     onChanged: (value) {
                       if (value != null) {
-                        setState(() {
-                          _autoLockTimeout = value;
-                        });
-                        // TODO: Implement auto-lock timeout
+                        ref.read(settingsProvider.notifier)
+                            .setAutoLockTimeout(value);
+                      }
+                    },
+                  ),
+                ),
+                ListTile(
+                  title: const Text('Clipboard Timeout'),
+                  subtitle: Text('${settingsState.clipboardTimeout} seconds'),
+                  trailing: DropdownButton<int>(
+                    value: settingsState.clipboardTimeout,
+                    items: [10, 20, 30, 60].map((int value) {
+                      return DropdownMenuItem<int>(
+                        value: value,
+                        child: Text('$value sec'),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        ref.read(settingsProvider.notifier)
+                            .setClipboardTimeout(value);
                       }
                     },
                   ),

@@ -41,32 +41,20 @@ OmniSphereVault is a secure, cross-platform password manager built with Flutter,
    - Shared models
    - Clean architecture principles
 
-### **Next Phase: State Management**
+5. **State Management**
+   - Riverpod integration
+   - State notifiers for features
+   - Provider-based state management
+   - Reactive UI updates
+   - Feature-specific providers
 
-#### **Riverpod Integration**
-- State management for all features
-- Proper dependency injection
-- State persistence
-- Reactive programming patterns
+### **Next Phase: Database & Security**
 
-#### **Clean Architecture**
-1. **Presentation Layer**
-   - MVVM pattern
-   - UI state management
-   - Error handling
-   - Loading states
-
-2. **Domain Layer**
-   - Use cases
-   - Repository interfaces
-   - Domain models
-   - Business logic
-
-3. **Data Layer**
-   - Repositories implementation
-   - Local data sources
-   - DTOs
-   - Mappers
+#### **Local Storage**
+- SQLite implementation
+- Encrypted storage
+- Migration system
+- Backup functionality
 
 #### **Security Architecture**
 1. **Encryption**

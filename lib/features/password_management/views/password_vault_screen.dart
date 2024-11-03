@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/password_entry.dart';
+import '../providers/password_list_provider.dart';
 import '../../../core/widgets/bottom_nav.dart';
 import './password_generator_screen.dart';
 import '../../../features/settings/views/settings_screen.dart';
@@ -10,117 +12,34 @@ import '../../../core/utils/keyboard_shortcuts.dart';
 import '../../../core/utils/clipboard_manager.dart';
 import '../../../features/categories/models/category_item.dart';
 
-class PasswordVaultScreen extends StatefulWidget {
+class PasswordVaultScreen extends ConsumerStatefulWidget {
   const PasswordVaultScreen({super.key});
 
   @override
-  State<PasswordVaultScreen> createState() => _PasswordVaultScreenState();
+  ConsumerState<PasswordVaultScreen> createState() => _PasswordVaultScreenState();
 }
 
-class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
+class _PasswordVaultScreenState extends ConsumerState<PasswordVaultScreen> {
   int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  CategoryItem? _selectedCategory;
   final FocusNode _focusNode = FocusNode();
   final FocusNode _searchFocusNode = FocusNode();
-  final Map<String, bool> _passwordVisibility = {}; // Track visibility per entry
+  final Map<String, bool> _passwordVisibility = {};
   final _clipboardManager = ClipboardManager();
-
-  // Temporary data - will be replaced with actual database data
-  final List<PasswordEntry> _passwords = [
-    PasswordEntry(
-      title: 'Google Account',
-      username: 'johndoe',
-      email: 'john.doe@gmail.com',
-      password: 'encrypted_password_1',
-      url: 'https://accounts.google.com',
-      notes: 'Personal Gmail account and Google services',
-      lastModified: DateTime.now(),
-      category: 'Email',
-      tags: ['personal', 'important'],
-      lastUsed: DateTime.now(),
-      passwordLastChanged: DateTime.now().subtract(const Duration(days: 30)),
-      isFavorite: true,
-    ),
-    PasswordEntry(
-      title: 'GitHub',
-      username: 'johndoe',
-      email: 'john.doe@gmail.com',
-      password: 'encrypted_password_2',
-      url: 'https://github.com',
-      notes: 'Professional GitHub account for work projects',
-      lastModified: DateTime.now().subtract(const Duration(days: 7)),
-      category: 'Development',
-      tags: ['work', 'development'],
-      lastUsed: DateTime.now().subtract(const Duration(days: 1)),
-      passwordLastChanged: DateTime.now().subtract(const Duration(days: 90)),
-      isFavorite: true,
-    ),
-    PasswordEntry(
-      title: 'Netflix',
-      email: 'john.doe@gmail.com',
-      password: 'encrypted_password_3',
-      url: 'https://netflix.com',
-      notes: 'Family Netflix subscription',
-      lastModified: DateTime.now().subtract(const Duration(days: 14)),
-      category: 'Entertainment',
-      tags: ['streaming', 'personal'],
-      lastUsed: DateTime.now().subtract(const Duration(days: 2)),
-      passwordLastChanged: DateTime.now().subtract(const Duration(days: 45)),
-      isFavorite: false,
-    ),
-    PasswordEntry(
-      title: 'Bank Account',
-      username: '12345678',
-      password: 'encrypted_password_4',
-      url: 'https://mybank.com',
-      notes: 'Personal checking account',
-      lastModified: DateTime.now().subtract(const Duration(days: 21)),
-      category: 'Banking',
-      tags: ['finance', 'important'],
-      lastUsed: DateTime.now().subtract(const Duration(days: 3)),
-      passwordLastChanged: DateTime.now().subtract(const Duration(days: 15)),
-      isFavorite: true,
-    ),
-    PasswordEntry(
-      title: 'Twitter',
-      username: '@johndoe',
-      password: 'encrypted_password_5',
-      url: 'https://twitter.com',
-      lastModified: DateTime.now().subtract(const Duration(days: 30)),
-      category: 'Social Media',
-      tags: ['social', 'personal'],
-      lastUsed: DateTime.now().subtract(const Duration(days: 5)),
-      passwordLastChanged: DateTime.now().subtract(const Duration(days: 60)),
-      isFavorite: false,
-    ),
-  ];
-
-  List<PasswordEntry> get filteredPasswords {
-    return _passwords.where((password) {
-      final matchesSearch = password.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (password.username?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
-          (password.email?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
-          (password.url?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
-          (password.notes?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
-      final matchesCategory = _selectedCategory == null || password.category == _selectedCategory!.name;
-      return matchesSearch && matchesCategory;
-    }).toList();
-  }
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text;
-      });
+      ref.read(passwordListProvider.notifier).setSearchQuery(_searchController.text);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final passwordState = ref.watch(passwordListProvider);
+    final filteredPasswords = ref.read(passwordListProvider.notifier).filteredEntries;
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyS, control: true): () {
@@ -168,9 +87,7 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
                     );
                     
                     if (newEntry != null && mounted) {
-                      setState(() {
-                        _passwords.add(newEntry);
-                      });
+                      ref.read(passwordListProvider.notifier).addPassword(newEntry);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Password entry saved successfully'),
@@ -187,20 +104,20 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
   }
 
   Widget _buildBody() {
+    final passwordState = ref.watch(passwordListProvider);
+    
     switch (_currentIndex) {
       case 0:
         return Column(
           children: [
             _buildSearchBar(),
-            if (_selectedCategory != null)
+            if (passwordState.selectedCategory != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Chip(
-                  label: Text(_selectedCategory!.name),
+                  label: Text(passwordState.selectedCategory!),
                   onDeleted: () {
-                    setState(() {
-                      _selectedCategory = null;
-                    });
+                    ref.read(passwordListProvider.notifier).setSelectedCategory(null);
                   },
                 ),
               ),
@@ -212,8 +129,8 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
       case 1:
         return CategoriesScreen(
           onCategorySelected: (category) {
+            ref.read(passwordListProvider.notifier).setSelectedCategory(category.name);
             setState(() {
-              _selectedCategory = category;
               _currentIndex = 0; // Switch back to password list
             });
           },
@@ -284,6 +201,9 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
   }
 
   Widget _buildPasswordList(BuildContext context) {
+    final passwordState = ref.watch(passwordListProvider);
+    final filteredPasswords = ref.read(passwordListProvider.notifier).filteredEntries;
+
     if (filteredPasswords.isEmpty) {
       return Center(
         child: Column(
@@ -314,15 +234,12 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
         left: 16,
         right: 16,
         top: 16,
-        bottom: 88, // Added extra padding at bottom to account for FAB
+        bottom: 88,
       ),
       itemCount: filteredPasswords.length,
       itemBuilder: (context, index) {
         final password = filteredPasswords[index];
-        return _buildPasswordCard(
-          context,
-          password,
-        );
+        return _buildPasswordCard(context, password);
       },
     );
   }
@@ -377,197 +294,34 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
               children: [
                 if (entry.url != null) ...[
                   const SizedBox(height: 16),
-                  InkWell(
-                    onTap: () => _copyToClipboard(entry.url!, 'URL'),
-                    child: Row(
-                      children: [
-                        Icon(Icons.link,
-                            size: 16,
-                            color: colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            entry.url!,
-                            style: textTheme.bodyMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.copy,
-                              size: 20,
-                              color: colorScheme.primary),
-                          onPressed: () => _copyToClipboard(entry.url!, 'URL'),
-                          tooltip: 'Copy URL',
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.open_in_new,
-                              size: 20,
-                              color: colorScheme.primary),
-                          onPressed: () {
-                            // TODO: Implement URL launch
-                          },
-                          tooltip: 'Open URL',
-                        ),
-                      ],
-                    ),
+                  _buildDetailRow(
+                    context,
+                    Icons.link,
+                    entry.url!,
+                    'URL',
+                    showOpen: true,
                   ),
                 ],
                 if (entry.username != null) ...[
                   const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () => _copyToClipboard(entry.username!, 'Username'),
-                    child: Row(
-                      children: [
-                        Icon(Icons.person_outline,
-                            size: 16,
-                            color: colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Username',
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.outline,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                entry.username!,
-                                style: textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.copy,
-                              size: 20,
-                              color: colorScheme.primary),
-                          onPressed: () =>
-                              _copyToClipboard(entry.username!, 'Username'),
-                          tooltip: 'Copy username',
-                        ),
-                      ],
-                    ),
+                  _buildDetailRow(
+                    context,
+                    Icons.person_outline,
+                    entry.username!,
+                    'Username',
                   ),
                 ],
                 if (entry.email != null) ...[
                   const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () => _copyToClipboard(entry.email!, 'Email'),
-                    child: Row(
-                      children: [
-                        Icon(Icons.email_outlined,
-                            size: 16,
-                            color: colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Email',
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.outline,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                entry.email!,
-                                style: textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.copy,
-                              size: 20,
-                              color: colorScheme.primary),
-                          onPressed: () =>
-                              _copyToClipboard(entry.email!, 'Email'),
-                          tooltip: 'Copy email',
-                        ),
-                      ],
-                    ),
+                  _buildDetailRow(
+                    context,
+                    Icons.email_outlined,
+                    entry.email!,
+                    'Email',
                   ),
                 ],
                 // Password section with visibility toggle and copy button
-                InkWell(
-                  onTap: () => _copyToClipboard(entry.password, 'Password'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Row(
-                      children: [
-                        Icon(Icons.password, 
-                             size: 16, 
-                             color: colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Password',
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.outline,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              AnimatedCrossFade(
-                                firstChild: Text(
-                                  '••••••••',
-                                  style: textTheme.bodyMedium,
-                                ),
-                                secondChild: Text(
-                                  entry.password,
-                                  style: textTheme.bodyMedium,
-                                ),
-                                crossFadeState: _passwordVisibility[entry.title] ?? false
-                                    ? CrossFadeState.showSecond
-                                    : CrossFadeState.showFirst,
-                                duration: const Duration(milliseconds: 200),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            (_passwordVisibility[entry.title] ?? false)
-                                ? Icons.visibility_off 
-                                : Icons.visibility,
-                            size: 20,
-                            color: colorScheme.primary,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _passwordVisibility[entry.title] = !(_passwordVisibility[entry.title] ?? false);
-                            });
-                            // Auto-hide password after 30 seconds
-                            if (_passwordVisibility[entry.title] ?? false) {
-                              Future.delayed(const Duration(seconds: 30), () {
-                                if (mounted) {
-                                  setState(() {
-                                    _passwordVisibility[entry.title] = false;
-                                  });
-                                }
-                              });
-                            }
-                          },
-                          tooltip: 'Show/hide password',
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.copy, 
-                                   size: 20, 
-                                   color: colorScheme.primary),
-                          onPressed: () => _copyToClipboard(entry.password, 'Password'),
-                          tooltip: 'Copy password',
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                _buildPasswordRow(context, entry),
                 if (entry.notes != null && entry.notes!.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Row(
@@ -638,20 +392,16 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
                   );
                   
                   if (updatedEntry != null && mounted) {
-                    setState(() {
-                      final index = _passwords.indexWhere(
-                        (e) => e.title == entry.title,
+                    await ref.read(passwordListProvider.notifier)
+                        .updatePassword(updatedEntry);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Password entry updated successfully'),
+                          duration: Duration(seconds: 2),
+                        ),
                       );
-                      if (index != -1) {
-                        _passwords[index] = updatedEntry;
-                      }
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Password entry updated successfully'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    }
                   }
                 },
                 tooltip: 'Edit entry',
@@ -670,14 +420,10 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
         controller: _searchController,
         focusNode: _searchFocusNode,
         onChanged: (query) {
-          setState(() {
-            _searchQuery = query;
-          });
+          ref.read(passwordListProvider.notifier).setSearchQuery(query);
         },
         onClear: () {
-          setState(() {
-            _searchQuery = '';
-          });
+          ref.read(passwordListProvider.notifier).setSearchQuery('');
         },
         hintText: 'Search passwords...',
       ),
@@ -693,11 +439,144 @@ class _PasswordVaultScreenState extends State<PasswordVaultScreen> {
   }
 
   void _clearFilters() {
-    setState(() {
-      _searchQuery = '';
-      _searchController.clear();
-      _selectedCategory = null;
-    });
+    _searchController.clear();
+    ref.read(passwordListProvider.notifier).setSearchQuery('');
+    ref.read(passwordListProvider.notifier).setSelectedCategory(null);
+  }
+
+  Widget _buildDetailRow(
+    BuildContext context,
+    IconData icon,
+    String value,
+    String label, {
+    bool showOpen = false,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return InkWell(
+      onTap: () => _copyToClipboard(value, label),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.outline,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: textTheme.bodyMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.copy,
+                size: 20,
+                color: colorScheme.primary),
+            onPressed: () => _copyToClipboard(value, label),
+            tooltip: 'Copy $label',
+          ),
+          if (showOpen)
+            IconButton(
+              icon: Icon(Icons.open_in_new,
+                  size: 20,
+                  color: colorScheme.primary),
+              onPressed: () {
+                // TODO: Implement URL launch
+              },
+              tooltip: 'Open URL',
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPasswordRow(BuildContext context, PasswordEntry entry) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return InkWell(
+      onTap: () => _copyToClipboard(entry.password, 'Password'),
+      child: Row(
+        children: [
+          Icon(Icons.password,
+              size: 16,
+              color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Password',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.outline,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                AnimatedCrossFade(
+                  firstChild: Text(
+                    '••••••••',
+                    style: textTheme.bodyMedium,
+                  ),
+                  secondChild: Text(
+                    entry.password,
+                    style: textTheme.bodyMedium,
+                  ),
+                  crossFadeState: _passwordVisibility[entry.title] ?? false
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  duration: const Duration(milliseconds: 200),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              (_passwordVisibility[entry.title] ?? false)
+                  ? Icons.visibility_off
+                  : Icons.visibility,
+              size: 20,
+              color: colorScheme.primary,
+            ),
+            onPressed: () {
+              setState(() {
+                _passwordVisibility[entry.title] = !(_passwordVisibility[entry.title] ?? false);
+              });
+              // Auto-hide password after 30 seconds
+              if (_passwordVisibility[entry.title] ?? false) {
+                Future.delayed(const Duration(seconds: 30), () {
+                  if (mounted) {
+                    setState(() {
+                      _passwordVisibility[entry.title] = false;
+                    });
+                  }
+                });
+              }
+            },
+            tooltip: 'Show/hide password',
+          ),
+          IconButton(
+            icon: Icon(Icons.copy,
+                size: 20,
+                color: colorScheme.primary),
+            onPressed: () => _copyToClipboard(entry.password, 'Password'),
+            tooltip: 'Copy password',
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _copyToClipboard(String data, String type) async {
