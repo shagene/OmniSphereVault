@@ -1,36 +1,17 @@
-import '../../../core/models/base_state.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import '../models/password_entry.dart';
+import '../../../core/enums/state_status.dart';
 
-class PasswordState extends BaseState {
-  final List<PasswordEntry> entries;
-  final String searchQuery;
-  final String? selectedCategory;
+part 'password_state.freezed.dart';
 
-  const PasswordState({
-    super.status = StateStatus.initial,
-    super.errorMessage,
-    super.isLoading = false,
-    this.entries = const [],
-    this.searchQuery = '',
-    this.selectedCategory,
-  });
-
-  @override
-  PasswordState copyWith({
-    StateStatus? status,
-    String? errorMessage,
-    bool? isLoading,
-    List<PasswordEntry>? entries,
-    String? searchQuery,
+@freezed
+class PasswordState with _$PasswordState {
+  const factory PasswordState({
+    @Default([]) List<PasswordEntry> entries,
+    @Default('') String searchQuery,
     String? selectedCategory,
-  }) {
-    return PasswordState(
-      status: status ?? this.status,
-      errorMessage: errorMessage ?? this.errorMessage,
-      isLoading: isLoading ?? this.isLoading,
-      entries: entries ?? this.entries,
-      searchQuery: searchQuery ?? this.searchQuery,
-      selectedCategory: selectedCategory ?? this.selectedCategory,
-    );
-  }
+    @Default(false) bool isLoading,
+    String? errorMessage,
+    @Default(StateStatus.initial) StateStatus status,
+  }) = _PasswordState;
 } 

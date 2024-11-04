@@ -1,108 +1,58 @@
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/services/storage_service.dart';
-import '../../../core/models/base_state.dart';
-import './settings_state.dart';
+import '../models/app_settings.dart';
+import '../repositories/settings_repository.dart';
+import './settings_repository_provider.dart';
 
-final settingsProvider =
-    StateNotifierProvider<SettingsNotifier, SettingsState>((ref) {
-  final storageService = ref.watch(storageServiceProvider);
-  return SettingsNotifier(storageService);
+final settingsProvider = StateNotifierProvider<SettingsNotifier, AppSettings>((ref) {
+  final repository = ref.watch(settingsRepositoryProvider);
+  return SettingsNotifier(repository);
 });
 
-class SettingsNotifier extends StateNotifier<SettingsState> {
-  final StorageService _storageService;
-  static const String _storageKey = 'settings';
+class SettingsNotifier extends StateNotifier<AppSettings> {
+  final SettingsRepository _repository;
 
-  SettingsNotifier(this._storageService) : super(const SettingsState()) {
+  SettingsNotifier(this._repository) : super(const AppSettings()) {
     _loadSettings();
   }
 
   Future<void> _loadSettings() async {
-    try {
-      state = state.copyWith(
-        status: StateStatus.loading,
-        isLoading: true,
-      );
+    final settings = await _repository.getSettings();
+    state = settings;
+  }
 
-      final savedState = await _storageService.getData(_storageKey);
-      if (savedState != null) {
-        state = SettingsState.fromJson(savedState);
-      }
-
-      state = state.copyWith(
-        status: StateStatus.success,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        status: StateStatus.error,
-        errorMessage: 'Failed to load settings: $e',
-        isLoading: false,
-      );
+  void toggleThemeMode() {
+    final currentMode = state.themeMode;
+    late ThemeMode newMode;
+    
+    switch (currentMode) {
+      case ThemeMode.system:
+        newMode = ThemeMode.light;
+        break;
+      case ThemeMode.light:
+        newMode = ThemeMode.dark;
+        break;
+      case ThemeMode.dark:
+        newMode = ThemeMode.system;
+        break;
     }
+
+    state = state.copyWith(themeMode: newMode);
+    _repository.saveSettings(state);
   }
 
-  Future<void> updateSettings(SettingsState newSettings) async {
-    try {
-      state = state.copyWith(
-        status: StateStatus.loading,
-        isLoading: true,
-      );
-
-      await _storageService.saveData(_storageKey, newSettings.toJson());
-
-      state = newSettings.copyWith(
-        status: StateStatus.success,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        status: StateStatus.error,
-        errorMessage: 'Failed to update settings: $e',
-        isLoading: false,
-      );
-    }
+  void setThemeMode(ThemeMode mode) {
+    state = state.copyWith(themeMode: mode);
+    _repository.saveSettings(state);
   }
 
-  Future<void> toggleDarkMode() async {
-    await updateSettings(
-      state.copyWith(isDarkMode: !state.isDarkMode),
-    );
+  void updateDefaultPasswordExpirationDays(int days) {
+    state = state.copyWith(defaultPasswordExpirationDays: days);
+    _repository.saveSettings(state);
   }
 
-  Future<void> toggleBiometrics() async {
-    await updateSettings(
-      state.copyWith(useBiometrics: !state.useBiometrics),
-    );
-  }
-
-  Future<void> setAutoLockTimeout(int minutes) async {
-    await updateSettings(
-      state.copyWith(autoLockTimeout: minutes),
-    );
-  }
-
-  Future<void> setClipboardTimeout(int seconds) async {
-    await updateSettings(
-      state.copyWith(clipboardTimeout: seconds),
-    );
-  }
-
-  Future<void> setDefaultPasswordExpirationDays(int days) async {
-    await updateSettings(
-      state.copyWith(defaultPasswordExpirationDays: days),
-    );
-  }
-
-  Future<void> setExpirationWarningDays(int days) async {
-    await updateSettings(
-      state.copyWith(expirationWarningDays: days),
-    );
-  }
-
-  Future<void> setDefaultNotifyOnExpiration(bool notify) async {
-    await updateSettings(
-      state.copyWith(defaultNotifyOnExpiration: notify),
-    );
+  void updateExpirationWarningDays(int days) {
+    state = state.copyWith(expirationWarningDays: days);
+    _repository.saveSettings(state);
   }
 } 

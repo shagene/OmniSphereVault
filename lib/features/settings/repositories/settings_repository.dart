@@ -1,7 +1,12 @@
 import '../models/app_settings.dart';
 
-abstract class SettingsRepository {
-  Future<AppSettings> getSettings();
-  Future<void> updateSettings(AppSettings settings);
-  Future<void> resetSettings();
+class SettingsRepository {
+  Future<AppSettings> getSettings() async {
+    // TODO: Implement actual storage logic
+    return const AppSettings();
+  }
+
+  Future<void> saveSettings(AppSettings settings) async {
+    // TODO: Implement actual storage logic
+  }
 } 

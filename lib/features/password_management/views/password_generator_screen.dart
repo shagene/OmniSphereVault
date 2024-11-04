@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/password_entry.dart';
+import '../models/password_enums.dart';
 import '../providers/password_generator_provider.dart';
 import '../../../features/settings/providers/settings_provider.dart';
-import '../models/password_enums.dart';
 
 class PasswordGeneratorScreen extends ConsumerStatefulWidget {
   final PasswordEntry? entryToEdit;
@@ -49,7 +49,6 @@ class _PasswordGeneratorScreenState extends ConsumerState<PasswordGeneratorScree
 
   Widget _buildCustomPasswordField(BuildContext context) {
     final generatorState = ref.watch(passwordGeneratorProvider);
-    final settings = ref.watch(settingsProvider);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,9 +91,9 @@ class _PasswordGeneratorScreenState extends ConsumerState<PasswordGeneratorScree
           if (!generatorState.neverExpires) ...[
             ListTile(
               title: const Text('Password Expiration'),
-              subtitle: Text('${settings.defaultPasswordExpirationDays} days'),
+              subtitle: Text('${ref.watch(settingsProvider).defaultPasswordExpirationDays} days'),
               trailing: DropdownButton<int>(
-                value: settings.defaultPasswordExpirationDays,
+                value: ref.watch(settingsProvider).defaultPasswordExpirationDays,
                 items: [30, 60, 90, 180, 365].map((days) {
                   return DropdownMenuItem(
                     value: days,
@@ -104,7 +103,7 @@ class _PasswordGeneratorScreenState extends ConsumerState<PasswordGeneratorScree
                 onChanged: (value) {
                   if (value != null) {
                     ref.read(settingsProvider.notifier)
-                        .setDefaultPasswordExpirationDays(value);
+                        .updateDefaultPasswordExpirationDays(value);
                   }
                 },
               ),
@@ -384,8 +383,7 @@ class _PasswordGeneratorScreenState extends ConsumerState<PasswordGeneratorScree
 
   Widget _buildExpirationSettings() {
     final generatorState = ref.watch(passwordGeneratorProvider);
-    final settings = ref.watch(settingsProvider);
-
+    
     return Card(
       elevation: 0,
       color: Theme.of(context).colorScheme.surfaceVariant,
@@ -409,7 +407,7 @@ class _PasswordGeneratorScreenState extends ConsumerState<PasswordGeneratorScree
               ListTile(
                 title: const Text('Expires After'),
                 trailing: DropdownButton<int>(
-                  value: settings.defaultPasswordExpirationDays,
+                  value: 90, // Default value
                   items: [30, 60, 90, 180, 365].map((days) {
                     return DropdownMenuItem(
                       value: days,
@@ -418,20 +416,10 @@ class _PasswordGeneratorScreenState extends ConsumerState<PasswordGeneratorScree
                   }).toList(),
                   onChanged: (value) {
                     if (value != null) {
-                      ref.read(settingsProvider.notifier)
-                          .setDefaultPasswordExpirationDays(value);
+                      // TODO: Implement expiration days setting
                     }
                   },
                 ),
-              ),
-              SwitchListTile(
-                title: const Text('Notify Before Expiration'),
-                subtitle: Text('Notify ${settings.expirationWarningDays} days before expiration'),
-                value: generatorState.notifyOnExpiration,
-                onChanged: (value) {
-                  ref.read(passwordGeneratorProvider.notifier)
-                      .setNotifyOnExpiration(value);
-                },
               ),
             ],
           ],
@@ -444,6 +432,7 @@ class _PasswordGeneratorScreenState extends ConsumerState<PasswordGeneratorScree
   Widget build(BuildContext context) {
     final generatorState = ref.watch(passwordGeneratorProvider);
     final colorScheme = Theme.of(context).colorScheme;
+    final settings = ref.watch(settingsProvider);
     
     return Scaffold(
       appBar: AppBar(

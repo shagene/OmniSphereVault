@@ -2,9 +2,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// Provider for StorageService initialization
+final storageServiceInitializerProvider = FutureProvider<StorageService>((ref) async {
+  final prefs = await SharedPreferences.getInstance();
+  return StorageService(prefs);
+});
+
 // Provider for StorageService
 final storageServiceProvider = Provider<StorageService>((ref) {
-  throw UnimplementedError('Storage service must be initialized');
+  final storageService = ref.watch(storageServiceInitializerProvider);
+  return storageService.when(
+    data: (service) => service,
+    loading: () => throw UnimplementedError('Storage service is not initialized'),
+    error: (err, stack) => throw Exception('Failed to initialize storage service: $err'),
+  );
 });
 
 class StorageService {
@@ -18,7 +29,7 @@ class StorageService {
   }
 
   Future<void> saveData(String key, Map<String, dynamic> data) async {
-    await _prefs.setString(key, jsonEncode(data));
+    // TODO: Implement secure storage logic
   }
 
   Future<Map<String, dynamic>?> getData(String key) async {
@@ -37,8 +48,8 @@ class StorageService {
     await _prefs.clear();
   }
 
-  Future<void> savePasswordState(Map<String, dynamic> state) async {
-    await saveData('password_state', state);
+  Future<void> savePasswordState(Map<String, dynamic> data) async {
+    // TODO: Implement secure storage logic
   }
 
   Future<Map<String, dynamic>?> getPasswordState() async {

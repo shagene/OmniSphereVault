@@ -1,26 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:io' show Platform;
-import 'core/utils/design_utils.dart';
-import 'core/utils/keyboard_shortcuts.dart';
-import 'core/services/storage_service.dart';
-import 'core/services/notification_service.dart';
+import 'features/settings/providers/settings_provider.dart';
 import 'features/auth/views/master_password_screen.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize services
-  final storageService = await StorageService.init();
-  await NotificationService().initialize();
-  
+void main() {
   runApp(
-    ProviderScope(
-      overrides: [
-        storageServiceProvider.overrideWithValue(storageService),
-      ],
-      child: const OmniSphereVault(),
+    const ProviderScope(
+      child: OmniSphereVault(),
     ),
   );
 }
@@ -30,67 +16,40 @@ class OmniSphereVault extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    
     return MaterialApp(
       title: 'OmniSphereVault',
+      themeMode: settings.themeMode,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2196F3),
-          brightness: Brightness.light,
-        ),
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          displayMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-          displaySmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-          bodyLarge: TextStyle(fontSize: 16),
-          bodyMedium: TextStyle(fontSize: 14),
+        colorScheme: ColorScheme.light(
+          primary: const Color(0xFFF7931A), // Bitcoin Orange
+          secondary: const Color(0xFF1A3F7A),
+          background: Colors.white,
+          surface: const Color(0xFFFAFAFA),
+          surfaceVariant: const Color(0xFFF0F0F0),
+          onPrimary: Colors.white,
+          onSecondary: Colors.white,
+          onBackground: const Color(0xFF1E1E1E),
+          onSurface: const Color(0xFF1E1E1E),
         ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2196F3),
-          brightness: Brightness.dark,
-        ),
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          displayMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-          displaySmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-          bodyLarge: TextStyle(fontSize: 16),
-          bodyMedium: TextStyle(fontSize: 14),
+        colorScheme: ColorScheme.dark(
+          primary: const Color(0xFFF7931A), // Bitcoin Orange
+          secondary: const Color(0xFF4A90E2),
+          background: const Color(0xFF121212),
+          surface: const Color(0xFF1E1E1E),
+          surfaceVariant: const Color(0xFF2C2C2C),
+          onPrimary: Colors.white,
+          onSecondary: Colors.white,
+          onBackground: Colors.white,
+          onSurface: Colors.white,
         ),
       ),
-      themeMode: ThemeMode.system,
-      builder: (context, child) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            if ((Platform.isWindows || Platform.isLinux || Platform.isMacOS) &&
-                (constraints.maxWidth < DesignUtils.minWindowWidth ||
-                    constraints.maxHeight < DesignUtils.minWindowHeight)) {
-              return const Center(
-                child: Text(
-                  'Please resize window to at least ${DesignUtils.minWindowWidth}x${DesignUtils.minWindowHeight}',
-                  textAlign: TextAlign.center,
-                ),
-              );
-            }
-            return CallbackShortcuts(
-              bindings: {
-                for (final shortcut in KeyboardShortcuts.shortcuts.entries)
-                  shortcut.key: () {
-                    // Handle shortcuts globally
-                    print('Shortcut activated: ${shortcut.value}');
-                  },
-              },
-              child: Focus(
-                autofocus: true,
-                child: child!,
-              ),
-            );
-          },
-        );
-      },
-      home: const MasterPasswordScreen(),
+      home: const MasterPasswordScreen(),  // Keep this as the initial screen
     );
   }
 }

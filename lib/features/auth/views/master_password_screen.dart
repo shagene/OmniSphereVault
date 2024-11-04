@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/auth_provider.dart';
 import '../../password_management/views/password_vault_screen.dart';
+import '../../settings/views/settings_screen.dart';
 
 class MasterPasswordScreen extends ConsumerStatefulWidget {
   const MasterPasswordScreen({super.key});
@@ -13,32 +13,12 @@ class MasterPasswordScreen extends ConsumerStatefulWidget {
 class _MasterPasswordScreenState extends ConsumerState<MasterPasswordScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkBiometrics();
-  }
-
-  Future<void> _checkBiometrics() async {
-    await ref.read(authProvider.notifier).checkBiometricAvailability();
-  }
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-
-    // Handle authentication state changes
-    ref.listen(authProvider, (previous, next) {
-      if (next.isAuthenticated) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const PasswordVaultScreen()),
-        );
-      }
-    });
 
     return Scaffold(
       body: Container(
@@ -49,14 +29,17 @@ class _MasterPasswordScreenState extends ConsumerState<MasterPasswordScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.lock,
                   size: 64,
+                  color: colorScheme.primary,
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  'Welcome Back',
-                  style: textTheme.displayLarge,
+                  'Welcome to OmniSphereVault',
+                  style: textTheme.headlineMedium?.copyWith(
+                    color: colorScheme.onBackground,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
@@ -74,7 +57,6 @@ class _MasterPasswordScreenState extends ConsumerState<MasterPasswordScreen> {
                   decoration: InputDecoration(
                     labelText: 'Master Password',
                     hintText: 'Enter your master password',
-                    errorText: authState.error,
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -88,19 +70,12 @@ class _MasterPasswordScreenState extends ConsumerState<MasterPasswordScreen> {
                     ),
                     border: const OutlineInputBorder(),
                   ),
-                  onSubmitted: (value) {
-                    ref.read(authProvider.notifier).authenticate(value);
-                  },
+                  onSubmitted: (_) => _handleUnlock(),
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: authState.isLoading
-                      ? null
-                      : () {
-                          ref.read(authProvider.notifier)
-                              .authenticate(_passwordController.text);
-                        },
-                  child: authState.isLoading
+                  onPressed: _isLoading ? null : _handleUnlock,
+                  child: _isLoading
                       ? const SizedBox(
                           width: 20,
                           height: 20,
@@ -111,25 +86,59 @@ class _MasterPasswordScreenState extends ConsumerState<MasterPasswordScreen> {
                         )
                       : const Text('Unlock'),
                 ),
-                if (authState.isBiometricAvailable) ...[
-                  const SizedBox(height: 16),
-                  TextButton.icon(
-                    onPressed: authState.isLoading
-                        ? null
-                        : () {
-                            ref.read(authProvider.notifier)
-                                .authenticateWithBiometrics();
-                          },
-                    icon: const Icon(Icons.fingerprint),
-                    label: const Text('Use Biometric Authentication'),
-                  ),
-                ],
+                const SizedBox(height: 16),
+                TextButton.icon(
+                  onPressed: _isLoading ? null : () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.settings),
+                  label: const Text('Settings'),
+                ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleUnlock() async {
+    if (_passwordController.text.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Simulate password check
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (_passwordController.text == 'password') { // Temporary for testing
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PasswordVaultScreen(),
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid master password'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override

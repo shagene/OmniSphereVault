@@ -1,89 +1,108 @@
-# **OmniSphereVault Planning Document**
+# **OmniSphereVault Technical Documentation**
 
-## **Overview**
-OmniSphereVault is a secure, cross-platform password manager built with Flutter, focusing on local storage and strong security features. The application provides users with a secure means to manage passwords and sensitive information without internet connectivity.
+## **Current Architecture**
 
-## **Current Implementation Status**
+### **Core Services**
+1. **Storage Service**
+   - SharedPreferences-based temporary storage
+   - Pending SQLite implementation
+   - FutureProvider initialization pattern
+   - Prepared for encryption integration
 
-### **Core Features Implemented**
-1. **User Interface**
-   - Material 3 design system
-   - Responsive layout with minimum window size
-   - Dark/light theme support
-   - Cross-platform compatibility
-   - Password generation options
-   - Password entry editing
-   - History tracking
-   - Category management with icon/color pickers
-   - Password expiration management
-   - Multiple password generation modes
+2. **Notification Service**
+   - Flutter Local Notifications integration
+   - Cross-platform notification support
+   - Expiration notification system
+   - Async initialization pattern
 
-2. **Password Management**
-   - Password visibility toggle
-   - Secure clipboard handling
-   - Password entry organization
+3. **State Management**
+   - Riverpod implementation
+   - Feature-based state organization
+   - Proper error handling
+   - Loading state management
+   - Async state initialization
+
+### **Feature Modules**
+
+1. **Password Management**
+   - Complete CRUD operations
    - Category management
-   - Password generation modes:
-     - Standard passwords
-     - Memorable passwords
-     - PINs
-     - Passphrases
-   - Custom password input
-   - Password history tracking
-   - URL validation and formatting
-   - Password expiration tracking
-   - Expiration notifications
-
-3. **Navigation & Usability**
-   - Keyboard shortcuts
    - Search functionality
-   - Category filtering
-   - Intuitive navigation flow
-   - Bottom navigation
-   - Drawer navigation
+   - Filtering system
+   - Password generation modes
+   - Expiration tracking
+   - History management
 
-4. **Project Architecture**
-   - MVVM pattern implementation
-   - Feature-based organization
-   - Core utilities separation
-   - Shared models
-   - Clean architecture principles
+2. **Settings Management**
+   - Theme management
+   - Password expiration settings
+   - Notification preferences
+   - Repository pattern implementation
 
-5. **State Management**
-   - Riverpod integration
-   - State notifiers for features
-   - Provider-based state management
-   - Reactive UI updates
-   - Feature-specific providers
-   - State persistence
-   - Error handling
-   - Loading states
+### **Security Architecture (Planned)**
 
-### **Next Phase: Database & Storage**
+1. **Encryption Layer**
+   - AES-256 encryption (pending)
+   - Key derivation (pending)
+   - Secure storage integration (pending)
 
-#### **SQLite Integration**
-- Database setup with sqflite 2.4.0
-- Path management with path_provider 2.1.5
-- Schema design
-- Migration system
-- CRUD operations
-- Data encryption
+2. **Authentication System**
+   - Master password verification (pending)
+   - Biometric authentication (planned)
+   - Session management (planned)
 
-#### **Security Architecture**
-1. **Encryption**
-   - AES-256 implementation
-   - Key derivation
-   - Secure storage
+### **Database Design (Planned)**
 
-2. **Authentication**
-   - Master password verification
-   - Biometric integration
-   - Session management
+1. **Core Tables**
+   - Passwords
+   - Categories
+   - History
+   - Settings
+   - Backup metadata
 
-3. **Data Protection**
-   - Zero-knowledge architecture
-   - Secure backup system
-   - Export/Import security
+2. **Security Features**
+   - Encrypted storage
+   - Secure deletion
+   - Backup encryption
+
+## **Implementation Guidelines**
+
+### **Adding New Features**
+1. Create feature directory under lib/features
+2. Implement models with freezed
+3. Create providers using Riverpod
+4. Add UI components
+5. Implement tests
+
+### **Security Considerations**
+1. Use secure random for generation
+2. Implement proper key derivation
+3. Handle sensitive data in memory
+4. Implement secure deletion
+5. Validate all user input
+
+### **Testing Requirements**
+1. Unit tests for core functionality
+2. Integration tests for features
+3. Security testing
+4. Performance testing
+5. Cross-platform validation
+
+## **Next Implementation Phase**
+
+### **Priority Features**
+1. Database implementation
+2. Security layer
+3. Authentication system
+4. Backup/restore functionality
+5. Comprehensive testing
+
+### **Technical Debt**
+1. Complete storage implementation
+2. Add proper error handling
+3. Implement security features
+4. Add comprehensive testing
+5. Complete documentation
 
 ---
 

@@ -1,51 +1,69 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/storage_service.dart';
-import '../../../core/models/base_state.dart';
 import '../../../core/services/notification_service.dart';
+import '../../../core/providers/notification_service_provider.dart';
+import '../../../features/settings/models/app_settings.dart';
 import '../../../features/settings/providers/settings_provider.dart';
-import '../../../features/settings/providers/settings_state.dart';
 import './password_state.dart';
 import '../models/password_entry.dart';
+import '../../../core/enums/state_status.dart';
 
-final passwordListProvider =
-    StateNotifierProvider<PasswordListNotifier, PasswordState>((ref) {
-  final storageService = ref.watch(storageServiceProvider);
+final passwordListProvider = StateNotifierProvider<PasswordListNotifier, PasswordState>((ref) {
+  // Watch the initialization providers
+  final notificationServiceAsync = ref.watch(notificationServiceInitializerProvider);
+  final storageServiceAsync = ref.watch(storageServiceInitializerProvider);
   final settings = ref.watch(settingsProvider);
-  return PasswordListNotifier(storageService, settings);
+
+  // Return a loading state if services aren't ready
+  return notificationServiceAsync.when(
+    loading: () => PasswordListNotifier.loading(),
+    error: (err, stack) => throw Exception('Failed to initialize services: $err'),
+    data: (notificationService) => storageServiceAsync.when(
+      loading: () => PasswordListNotifier.loading(),
+      error: (err, stack) => throw Exception('Failed to initialize services: $err'),
+      data: (storageService) => PasswordListNotifier(
+        storageService: storageService,
+        settings: settings,
+        notificationService: notificationService,
+      ),
+    ),
+  );
 });
 
 class PasswordListNotifier extends StateNotifier<PasswordState> {
-  final StorageService _storageService;
-  final NotificationService _notificationService = NotificationService();
-  final SettingsState _settings;
+  final StorageService? _storageService;
+  final AppSettings? _settings;
+  final NotificationService? _notificationService;
 
-  PasswordListNotifier(this._storageService, this._settings)
-      : super(const PasswordState()) {
-    _loadState();
-    _checkPasswordExpirations();
+  PasswordListNotifier({
+    StorageService? storageService,
+    AppSettings? settings,
+    NotificationService? notificationService,
+  })  : _storageService = storageService,
+        _settings = settings,
+        _notificationService = notificationService,
+        super(const PasswordState()) {
+    if (_storageService != null) {
+      _loadState();
+    }
   }
+
+  // Constructor for loading state
+  PasswordListNotifier.loading() : 
+    _storageService = null,
+    _settings = null,
+    _notificationService = null,
+    super(const PasswordState(isLoading: true));
 
   Future<void> _loadState() async {
     try {
-      state = state.copyWith(
-        status: StateStatus.loading,
-        isLoading: true,
-      );
-
-      final savedState = await _storageService.getPasswordState();
-      if (savedState != null) {
-        // TODO: Implement state restoration from saved data
-      }
-
-      state = state.copyWith(
-        status: StateStatus.success,
-        isLoading: false,
-      );
+      state = state.copyWith(isLoading: true);
+      // TODO: Implement loading from storage
+      state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(
-        status: StateStatus.error,
-        errorMessage: 'Failed to load passwords: $e',
         isLoading: false,
+        errorMessage: 'Failed to load passwords: $e',
       );
     }
   }
@@ -58,7 +76,7 @@ class PasswordListNotifier extends StateNotifier<PasswordState> {
       );
 
       final updatedEntries = [...state.entries, entry];
-      await _storageService.savePasswordState({
+      await _storageService!.savePasswordState({
         'entries': updatedEntries.map((e) => e.toJson()).toList(),
       });
 
@@ -87,7 +105,7 @@ class PasswordListNotifier extends StateNotifier<PasswordState> {
         return e.title == entry.title ? entry : e;
       }).toList();
 
-      await _storageService.saveData('passwords', {
+      await _storageService!.saveData('passwords', {
         'entries': updatedEntries.map((e) => e.toJson()).toList(),
       });
 
@@ -97,7 +115,6 @@ class PasswordListNotifier extends StateNotifier<PasswordState> {
         isLoading: false,
       );
 
-      // Check expirations after update
       await _checkPasswordExpirations();
     } catch (e) {
       state = state.copyWith(
@@ -111,10 +128,10 @@ class PasswordListNotifier extends StateNotifier<PasswordState> {
   Future<void> _checkPasswordExpirations() async {
     for (final entry in state.entries) {
       if (entry.shouldNotifyExpiration(
-        _settings.defaultPasswordExpirationDays,
-        _settings.expirationWarningDays,
+        _settings!.defaultPasswordExpirationDays,
+        _settings!.expirationWarningDays,
       )) {
-        await _notificationService.showPasswordExpirationNotification(
+        await _notificationService!.showPasswordExpirationNotification(
           entry.title,
           entry.password,
         );

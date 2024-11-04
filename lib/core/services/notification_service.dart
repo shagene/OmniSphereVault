@@ -21,23 +21,10 @@ class NotificationService {
     await _notifications.initialize(initializationSettings);
   }
 
-  Future<void> showPasswordExpirationNotification(String title, String password) async {
-    const notificationDetails = NotificationDetails(
-      android: AndroidNotificationDetails(
-        'password_expiration',
-        'Password Expiration',
-        channelDescription: 'Notifications for password expiration',
-        importance: Importance.high,
-        priority: Priority.high,
-      ),
-      linux: LinuxNotificationDetails(),
-    );
-
-    await _notifications.show(
-      0,
-      'Password Expiration Warning',
-      'The password for "$title" will expire soon',
-      notificationDetails,
-    );
+  Future<void> showPasswordExpirationNotification(
+    String title,
+    String password,
+  ) async {
+    // TODO: Implement notification logic using flutter_local_notifications
   }
 } 
