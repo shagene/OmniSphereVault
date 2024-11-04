@@ -1,26 +1,48 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/models/base_state.dart';
 import '../models/category_item.dart';
 
-class CategoryState {
+class CategoryState extends BaseState {
   final List<CategoryItem> categories;
-  final bool isLoading;
-  final String? error;
+  final String? selectedCategory;
 
   const CategoryState({
+    super.status = StateStatus.initial,
+    super.errorMessage,
+    super.isLoading = false,
     this.categories = const [],
-    this.isLoading = false,
-    this.error,
+    this.selectedCategory,
   });
 
+  @override
   CategoryState copyWith({
-    List<CategoryItem>? categories,
+    StateStatus? status,
+    String? errorMessage,
     bool? isLoading,
-    String? error,
+    List<CategoryItem>? categories,
+    String? selectedCategory,
   }) {
     return CategoryState(
-      categories: categories ?? this.categories,
+      status: status ?? this.status,
+      errorMessage: errorMessage ?? this.errorMessage,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      categories: categories ?? this.categories,
+      selectedCategory: selectedCategory ?? this.selectedCategory,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'categories': categories.map((c) => c.toJson()).toList(),
+      'selectedCategory': selectedCategory,
+    };
+  }
+
+  factory CategoryState.fromJson(Map<String, dynamic> json) {
+    return CategoryState(
+      categories: (json['categories'] as List)
+          .map((c) => CategoryItem.fromJson(c as Map<String, dynamic>))
+          .toList(),
+      selectedCategory: json['selectedCategory'] as String?,
     );
   }
 } 

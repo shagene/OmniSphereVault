@@ -1,32 +1,34 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/models/base_state.dart';
 import '../models/password_entry.dart';
 
-class PasswordState {
+class PasswordState extends BaseState {
   final List<PasswordEntry> entries;
-  final bool isLoading;
-  final String? error;
   final String searchQuery;
   final String? selectedCategory;
 
   const PasswordState({
+    super.status = StateStatus.initial,
+    super.errorMessage,
+    super.isLoading = false,
     this.entries = const [],
-    this.isLoading = false,
-    this.error,
     this.searchQuery = '',
     this.selectedCategory,
   });
 
+  @override
   PasswordState copyWith({
-    List<PasswordEntry>? entries,
+    StateStatus? status,
+    String? errorMessage,
     bool? isLoading,
-    String? error,
+    List<PasswordEntry>? entries,
     String? searchQuery,
     String? selectedCategory,
   }) {
     return PasswordState(
-      entries: entries ?? this.entries,
+      status: status ?? this.status,
+      errorMessage: errorMessage ?? this.errorMessage,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      entries: entries ?? this.entries,
       searchQuery: searchQuery ?? this.searchQuery,
       selectedCategory: selectedCategory ?? this.selectedCategory,
     );

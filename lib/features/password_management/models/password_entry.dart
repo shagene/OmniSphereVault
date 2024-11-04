@@ -11,9 +11,15 @@ class PasswordEntry {
   final String category;
   final List<String> tags;
   final DateTime? lastUsed;
-  final DateTime? passwordLastChanged;
+  final DateTime passwordLastChanged;
   final bool isFavorite;
   final List<PasswordEntryHistory> history;
+  
+  // Custom expiration settings per password
+  final bool hasCustomExpirationSettings;  // New field
+  final int? passwordExpirationDays;       // Made nullable
+  final bool notifyOnExpiration;
+  final bool neverExpires;                 // New field
 
   PasswordEntry({
     required this.title,
@@ -26,10 +32,38 @@ class PasswordEntry {
     required this.category,
     this.tags = const [],
     this.lastUsed,
-    this.passwordLastChanged,
+    DateTime? passwordLastChanged,
     this.isFavorite = false,
     this.history = const [],
-  });
+    // Custom expiration settings
+    this.hasCustomExpirationSettings = false,
+    this.passwordExpirationDays,  // Will use default from settings if null
+    this.notifyOnExpiration = true,
+    this.neverExpires = false,    // If true, ignores expiration days
+  }) : passwordLastChanged = passwordLastChanged ?? DateTime.now();
+
+  bool isPasswordExpired(int defaultExpirationDays) {
+    if (neverExpires) return false;
+    final expirationDays = passwordExpirationDays ?? defaultExpirationDays;
+    final daysUntilExpiration = daysSincePasswordChange;
+    return daysUntilExpiration >= expirationDays;
+  }
+
+  int get daysSincePasswordChange {
+    return DateTime.now().difference(passwordLastChanged).inDays;
+  }
+
+  int getDaysUntilExpiration(int defaultExpirationDays) {
+    if (neverExpires) return -1;  // Never expires
+    final expirationDays = passwordExpirationDays ?? defaultExpirationDays;
+    return expirationDays - daysSincePasswordChange;
+  }
+
+  bool shouldNotifyExpiration(int defaultExpirationDays, int warningDays) {
+    if (neverExpires || !notifyOnExpiration) return false;
+    final daysLeft = getDaysUntilExpiration(defaultExpirationDays);
+    return daysLeft <= warningDays;
+  }
 
   PasswordEntry copyWith({
     String? title,
@@ -45,6 +79,10 @@ class PasswordEntry {
     DateTime? passwordLastChanged,
     bool? isFavorite,
     List<PasswordEntryHistory>? history,
+    bool? hasCustomExpirationSettings,
+    int? passwordExpirationDays,
+    bool? notifyOnExpiration,
+    bool? neverExpires,
     String? reason,
   }) {
     final Map<String, dynamic> changes = {};
@@ -100,6 +138,10 @@ class PasswordEntry {
       passwordLastChanged: password != null ? DateTime.now() : this.passwordLastChanged,
       isFavorite: isFavorite ?? this.isFavorite,
       history: updatedHistory,
+      hasCustomExpirationSettings: hasCustomExpirationSettings ?? this.hasCustomExpirationSettings,
+      passwordExpirationDays: passwordExpirationDays ?? this.passwordExpirationDays,
+      notifyOnExpiration: notifyOnExpiration ?? this.notifyOnExpiration,
+      neverExpires: neverExpires ?? this.neverExpires,
     );
   }
 
@@ -138,5 +180,49 @@ class PasswordEntry {
 
   String _capitalizeField(String field) {
     return field[0].toUpperCase() + field.substring(1);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'username': username,
+      'email': email,
+      'password': password,
+      'url': url,
+      'notes': notes,
+      'lastModified': lastModified.toIso8601String(),
+      'category': category,
+      'tags': tags,
+      'lastUsed': lastUsed?.toIso8601String(),
+      'passwordLastChanged': passwordLastChanged.toIso8601String(),
+      'isFavorite': isFavorite,
+      'hasCustomExpirationSettings': hasCustomExpirationSettings,
+      'passwordExpirationDays': passwordExpirationDays,
+      'notifyOnExpiration': notifyOnExpiration,
+      'neverExpires': neverExpires,
+    };
+  }
+
+  factory PasswordEntry.fromJson(Map<String, dynamic> json) {
+    return PasswordEntry(
+      title: json['title'] as String,
+      username: json['username'] as String?,
+      email: json['email'] as String?,
+      password: json['password'] as String,
+      url: json['url'] as String?,
+      notes: json['notes'] as String?,
+      lastModified: DateTime.parse(json['lastModified'] as String),
+      category: json['category'] as String,
+      tags: List<String>.from(json['tags'] as List),
+      lastUsed: json['lastUsed'] != null 
+          ? DateTime.parse(json['lastUsed'] as String) 
+          : null,
+      passwordLastChanged: DateTime.parse(json['passwordLastChanged'] as String),
+      isFavorite: json['isFavorite'] as bool,
+      hasCustomExpirationSettings: json['hasCustomExpirationSettings'] as bool? ?? false,
+      passwordExpirationDays: json['passwordExpirationDays'] as int?,
+      notifyOnExpiration: json['notifyOnExpiration'] as bool? ?? true,
+      neverExpires: json['neverExpires'] as bool? ?? false,
+    );
   }
 } 

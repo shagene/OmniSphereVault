@@ -4,14 +4,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io' show Platform;
 import 'core/utils/design_utils.dart';
 import 'core/utils/keyboard_shortcuts.dart';
+import 'core/services/storage_service.dart';
+import 'core/services/notification_service.dart';
 import 'features/auth/views/master_password_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialize services
+  final storageService = await StorageService.init();
+  await NotificationService().initialize();
+  
   runApp(
-    const ProviderScope(
-      child: OmniSphereVault(),
+    ProviderScope(
+      overrides: [
+        storageServiceProvider.overrideWithValue(storageService),
+      ],
+      child: const OmniSphereVault(),
     ),
   );
 }

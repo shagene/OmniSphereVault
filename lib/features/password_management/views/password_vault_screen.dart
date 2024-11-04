@@ -11,6 +11,9 @@ import '../../../core/widgets/search_bar_widget.dart';
 import '../../../core/utils/keyboard_shortcuts.dart';
 import '../../../core/utils/clipboard_manager.dart';
 import '../../../features/categories/models/category_item.dart';
+import '../../../core/models/base_state.dart';
+import '../widgets/password_expiration_banner.dart';
+import '../../../features/settings/providers/settings_provider.dart';
 
 class PasswordVaultScreen extends ConsumerStatefulWidget {
   const PasswordVaultScreen({super.key});
@@ -204,6 +207,42 @@ class _PasswordVaultScreenState extends ConsumerState<PasswordVaultScreen> {
     final passwordState = ref.watch(passwordListProvider);
     final filteredPasswords = ref.read(passwordListProvider.notifier).filteredEntries;
 
+    if (passwordState.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (passwordState.status == StateStatus.error) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              passwordState.errorMessage ?? 'An error occurred',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () {
+                ref.refresh(passwordListProvider);
+              },
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (filteredPasswords.isEmpty) {
       return Center(
         child: Column(
@@ -247,9 +286,14 @@ class _PasswordVaultScreenState extends ConsumerState<PasswordVaultScreen> {
   Widget _buildPasswordCard(BuildContext context, PasswordEntry entry) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final settings = ref.watch(settingsProvider);
 
-    // Initialize visibility state for this entry if not exists
-    _passwordVisibility.putIfAbsent(entry.title, () => false);
+    if (entry.shouldNotifyExpiration(
+      settings.defaultPasswordExpirationDays,
+      settings.expirationWarningDays,
+    )) {
+      // ... notification logic ...
+    }
 
     return Card(
       elevation: 0,
@@ -258,6 +302,28 @@ class _PasswordVaultScreenState extends ConsumerState<PasswordVaultScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (entry.shouldNotifyExpiration(
+            settings.defaultPasswordExpirationDays,
+            settings.expirationWarningDays,
+          ))
+            PasswordExpirationBanner(
+              entry: entry,
+              onUpdatePassword: () async {
+                final updatedEntry = await Navigator.push<PasswordEntry>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PasswordGeneratorScreen(
+                      entryToEdit: entry,
+                    ),
+                  ),
+                );
+                
+                if (updatedEntry != null && mounted) {
+                  ref.read(passwordListProvider.notifier)
+                      .updatePassword(updatedEntry);
+                }
+              },
+            ),
           ListTile(
             contentPadding: const EdgeInsets.all(16),
             title: Row(
@@ -324,18 +390,19 @@ class _PasswordVaultScreenState extends ConsumerState<PasswordVaultScreen> {
                 _buildPasswordRow(context, entry),
                 if (entry.notes != null && entry.notes!.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  Row(
+                  ExpansionTile(
+                    title: Text(
+                      'Notes',
+                      style: textTheme.titleSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                     children: [
-                      Icon(Icons.note_outlined, 
-                           size: 16, 
-                           color: colorScheme.onSurfaceVariant),
-                      const SizedBox(width: 8),
-                      Expanded(
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
                         child: Text(
                           entry.notes!,
-                          style: textTheme.bodySmall,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.bodyMedium,
                         ),
                       ),
                     ],
@@ -392,16 +459,14 @@ class _PasswordVaultScreenState extends ConsumerState<PasswordVaultScreen> {
                   );
                   
                   if (updatedEntry != null && mounted) {
-                    await ref.read(passwordListProvider.notifier)
+                    ref.read(passwordListProvider.notifier)
                         .updatePassword(updatedEntry);
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Password entry updated successfully'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Password entry updated successfully'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
                   }
                 },
                 tooltip: 'Edit entry',

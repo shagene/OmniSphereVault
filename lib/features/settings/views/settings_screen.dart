@@ -92,7 +92,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          Text('Data Management', style: textTheme.titleLarge),
+          Text('Password Expiration', style: textTheme.titleLarge),
           const SizedBox(height: 8),
           Card(
             elevation: 0,
@@ -100,24 +100,50 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.file_download),
-                  title: const Text('Import Passwords'),
-                  onTap: () {
-                    // TODO: Implement import
-                  },
+                  title: const Text('Default Password Expiration'),
+                  subtitle: Text('${settingsState.defaultPasswordExpirationDays} days'),
+                  trailing: DropdownButton<int>(
+                    value: settingsState.defaultPasswordExpirationDays,
+                    items: [30, 60, 90, 180, 365].map((int value) {
+                      return DropdownMenuItem<int>(
+                        value: value,
+                        child: Text('$value days'),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        ref.read(settingsProvider.notifier)
+                            .setDefaultPasswordExpirationDays(value);
+                      }
+                    },
+                  ),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.file_upload),
-                  title: const Text('Export Passwords'),
-                  onTap: () {
-                    // TODO: Implement export
-                  },
+                  title: const Text('Warning Period'),
+                  subtitle: Text('Warn ${settingsState.expirationWarningDays} days before expiration'),
+                  trailing: DropdownButton<int>(
+                    value: settingsState.expirationWarningDays,
+                    items: [7, 14, 30].map((int value) {
+                      return DropdownMenuItem<int>(
+                        value: value,
+                        child: Text('$value days'),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        ref.read(settingsProvider.notifier)
+                            .setExpirationWarningDays(value);
+                      }
+                    },
+                  ),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.backup),
-                  title: const Text('Backup Settings'),
-                  onTap: () {
-                    // TODO: Implement backup settings
+                SwitchListTile(
+                  title: const Text('Enable Expiration Notifications'),
+                  subtitle: const Text('Show notifications for expiring passwords'),
+                  value: settingsState.defaultNotifyOnExpiration,
+                  onChanged: (value) {
+                    ref.read(settingsProvider.notifier)
+                        .setDefaultNotifyOnExpiration(value);
                   },
                 ),
               ],

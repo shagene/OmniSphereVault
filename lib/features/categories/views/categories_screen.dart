@@ -54,10 +54,10 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
           const SizedBox(height: 16),
           if (categoryState.isLoading)
             const Center(child: CircularProgressIndicator())
-          else if (categoryState.error != null)
+          else if (categoryState.errorMessage != null)
             Center(
               child: Text(
-                categoryState.error!,
+                categoryState.errorMessage!,
                 style: TextStyle(color: colorScheme.error),
               ),
             )
